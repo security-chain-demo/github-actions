@@ -1,10 +1,6 @@
 name: Hello GitHub Actions
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch: # Allows to run this workflow manually from the Actions tab
 
 jobs:
@@ -24,11 +20,3 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-
-  run-trivy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "python:3.4-alpine" # demo image
