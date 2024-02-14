@@ -25,3 +25,10 @@ jobs:
           echo Add other actions to build,
           echo test, and deploy your project.
 
+  run-trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "python:3.4-alpine" # demo image
