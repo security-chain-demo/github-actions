@@ -11,9 +11,18 @@ jobs:
   run-trivy:
     runs-on: ubuntu-latest
     steps:
+      - name: Enable cache for Trivy
+        uses: actions/cache@v4
+        with:
+          key: trivy-cache # ID
+          path: trivy-cache # path to match "cache-dir" below
+          save-always: true # save cache even if Trivy step fails
+        
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          cache-dir: trivy-cache-dir
+          cache-dir: trivy-cache
           image-ref: "python:3.4-alpine" # demo image
 
+      - name: Fix permissions # trivy-action creates those as root, so we can't persist the cache
+        run: sudo chown -R $(id -u):$(id -g) trivy-cache
