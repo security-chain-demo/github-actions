@@ -1,6 +1,8 @@
 name: Hello GitHub Actions
 
 on:
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch: # Allows to run this workflow manually from the Actions tab
 
 jobs:
@@ -20,3 +22,8 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+
+      - name: Run custom JS action
+        uses: ./.github/actions/hello-js-action
+        with:
+          answer: 42
