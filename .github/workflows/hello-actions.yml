@@ -27,3 +27,11 @@ jobs:
         uses: ./.github/actions/hello-js-action
         with:
           answer: 42
+
+      - name: Test JIRA connection
+        uses: ./.github/actions/hello-jira
+        env:
+          JIRA_DOMAIN: ${{ vars.jira_domain }}
+          JIRA_EMAIL: ${{ vars.jira_email }}
+          JIRA_TOKEN: ${{ secrets.jira_token }}
+          JIRA_ISSUE: ${{ vars.jira_issue }}
