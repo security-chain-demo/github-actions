@@ -19,7 +19,9 @@ function getJiraIssue(jiraAuth, jiraIssue) {
             });
 
             res.on('end', () => {
-                resolve(data);
+                const jsonData = JSON.parse(data);
+
+                resolve(jsonData);
             });
         }).on('error', err => {
             reject(err);
