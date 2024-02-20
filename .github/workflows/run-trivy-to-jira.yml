@@ -1,0 +1,45 @@
+name: Run Trivy to JIRA
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch: # Allows to run this workflow manually from the Actions tab
+
+jobs:
+  run-trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout our actions for later
+        uses: actions/checkout@v4
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "python:3.4-alpine" # demo image
+          format: json
+          output: trivy-results.json
+
+      - name: Save Trivy results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-results.json
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+      - name: Synchronize Trivy result to JIRA
+        uses: ./.github/actions/sync-trivy-to-jira
+        with:
+          trivy-results: trivy-results.json
+          min-severity: ${{ vars.min-severity }}
+          jira-project-key: ${{ vars.jira-project-key }}
+          jira-issuetype-name: ${{ vars.jira-issuetype-name }}
+          jira-cve-id-field-id: ${{ vars.jira-cve-id-field-id }}
+          jira-cve-id-field-name: ${{ vars.jira-cve-id-field-name }}
+        env:
+          JIRA_DOMAIN: ${{ vars.jira_domain }}
+          JIRA_EMAIL: ${{ vars.jira_email }}
+          JIRA_TOKEN: ${{ secrets.jira_token }}

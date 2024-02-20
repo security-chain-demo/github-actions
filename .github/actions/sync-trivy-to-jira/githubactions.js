@@ -33,10 +33,12 @@ function ghaDebug(text) {
     process.stdout.write(`::debug::${text}\n`);
 }
 
-function ghaGroup(groupName, bodyFunc) {
+async function ghaGroup(groupName, asyncFunc) {
     process.stdout.write(`::group::${groupName}\n`);
-    bodyFunc();
+    const result = await asyncFunc();
     process.stdout.write('::endgroup::\n');
+
+    return result;
 }
 
 module.exports = {
