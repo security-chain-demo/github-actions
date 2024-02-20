@@ -1,6 +1,0 @@
-name: Hello JIRA
-description: Demo to read from JIRA
-
-runs:
-  using: node20
-  main: index.js

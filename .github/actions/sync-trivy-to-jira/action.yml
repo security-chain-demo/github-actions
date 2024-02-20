@@ -18,6 +18,11 @@ inputs:
   jira-cve-id-field-id:
     description: ID of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities.
     required: true
+  jira-cve-id-field-name:
+    description: |
+      Name of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities. 
+      JIRA needs to have this name in JQL queries.
+    required: true
 
 runs:
   using: node20
