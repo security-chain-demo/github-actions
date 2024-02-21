@@ -1,6 +1,6 @@
 const fs = require('node:fs');
-const {severityToInt} = require('./utils');
-const {ghaGetRequiredInput, getRequiredEnvVariable, ghaGetInput, ghaDebug, ghaGroup, ghaNotice} = require('./githubactions');
+const {severityToInt, severityToIndex} = require('./utils');
+const {ghaGetRequiredInput, getRequiredEnvVariable, ghaGetInput, ghaDebug, ghaWarning, ghaGroup, ghaNotice} = require('./githubactions');
 const {jiraSearchIssueByJQL, jiraCreateIssue, jiraEditIssue} = require('./jira');
 
 // Inputs and environment
@@ -11,6 +11,16 @@ const jiraProjectKey = ghaGetRequiredInput('jira_project_key');
 const jiraIssuetypeName = ghaGetRequiredInput('jira_issuetype_name');
 const jiraCveIdFieldId = ghaGetRequiredInput('jira_cve_id_field_id');
 const jiraCveIdFieldName = ghaGetRequiredInput('jira_cve_id_field_name');
+
+let input = ghaGetInput('jira_priority_ids') || null;
+if (input) {
+    input = input.split(',');
+    if (input.length !== 5) {
+        ghaWarning(`Input 'jira_priority_ids' does not have exactly 5 IDs. Aborting.`)
+        process.exit(1);
+    }
+}
+const jiraPriorityIds = input;
 
 const jiraAuth = {
     domain: getRequiredEnvVariable('JIRA_DOMAIN'),
@@ -91,7 +101,8 @@ function buildSummaryAndDescription(cve) {
 
     let description = '';
     description += `Trivy found a vulnerability in one or more packages.`;
-    description += `\n\nAffected packages: ${cve.packageNames.join(', ')}`;
+    description += `\n\n*Severity:*\n${cve.severity}`;
+    description += `\n\n*Affected packages*:\n${cve.packageNames.join(', ')}`;
     description += `\n\n*Description:*\n${cve.description}`;
 
     return {summary, description};
@@ -127,10 +138,15 @@ async function syncCVEsToJira(cvesById) {
 
                 ghaNotice(`No JIRA issue exists for CVE ${cveId}. Creating.`);
 
+                // Set priority only when creating the issue.
+                // Users may triage the issue and change the priority in JIRA.
+                // We leave that untouched when updating an issue.
+                const priorityId = (jiraPriorityIds) ? jiraPriorityIds[severityToIndex(cve.severity)] : null;
+
                 const customFields = {
                     [jiraCveIdFieldId]: cve.id
                 };
-                const response = await jiraCreateIssue(jiraAuth, jiraProjectKey, jiraIssuetypeName, summary, description, customFields);
+                const response = await jiraCreateIssue(jiraAuth, jiraProjectKey, jiraIssuetypeName, priorityId, summary, description, customFields);
                 const createIssueKey = response.key;
 
                 ghaNotice(`Created new JIRA issue ${createIssueKey} for CVE ${cveId}.`);

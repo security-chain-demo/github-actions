@@ -23,6 +23,11 @@ inputs:
       Name of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities. 
       JIRA needs to have this name in JQL queries.
     required: true
+  jira_priority_ids:
+    description: |
+      Comma-separated list of five JIRA IDs for priorities to use for CVE Severities (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN).
+      If not provided, no priority will be set explicitly.
+    required: false
 
 runs:
   using: node20

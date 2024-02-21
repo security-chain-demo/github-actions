@@ -59,7 +59,7 @@ async function jiraSearchIssueByJQL(jiraAuth, jql) {
     });
 }
 
-async function jiraCreateIssue(jiraAuth, projectKey, issuetypeName, summary, description, customFields) {
+async function jiraCreateIssue(jiraAuth, projectKey, issuetypeName, priorityId, summary, description, customFields) {
     const jsonData = {
         fields: {
             project: {
@@ -73,6 +73,12 @@ async function jiraCreateIssue(jiraAuth, projectKey, issuetypeName, summary, des
             ...customFields
         }
     };
+
+    if (priorityId) {
+        jsonData.fields.priority = {
+            id: priorityId
+        };
+    }
 
     return new Promise((resolve, reject) => {
         const postData = JSON.stringify(jsonData);
