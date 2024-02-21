@@ -11,6 +11,7 @@ const jiraProjectKey = ghaGetRequiredInput('jira_project_key');
 const jiraIssuetypeName = ghaGetRequiredInput('jira_issuetype_name');
 const jiraCveIdFieldId = ghaGetRequiredInput('jira_cve_id_field_id');
 const jiraCveIdFieldName = ghaGetRequiredInput('jira_cve_id_field_name');
+const jiraCveStatusFieldId = ghaGetRequiredInput('jira_cve_status_field_id');
 
 let input = ghaGetInput('jira_priority_ids') || null;
 if (input) {
@@ -66,7 +67,12 @@ async function processTrivyResult() {
                         severity: vulSeverity,
                         title: vulnerability.Title || vulPackageName,
                         description: vulnerability.Description || 'No description available.',
-                        packageNames: [vulPackageName]
+                        packageNames: [vulPackageName],
+                        installedVersion: vulInstalledVersion,
+                        fixedVersion: vulnerability.FixedVersion || "No fix version available.",
+                        status: vulnerability.Status || "unknown",
+                        primaryUrl: vulnerability.PrimaryURL || "No information available.",
+                        references: vulnerability.References || [],
                     };
                 } else {
                     // Add package
@@ -103,7 +109,10 @@ function buildSummaryAndDescription(cve) {
     description += `Trivy found a vulnerability in one or more packages.`;
     description += `\n\n*Severity:*\n${cve.severity}`;
     description += `\n\n*Affected packages*:\n${cve.packageNames.join(', ')}`;
+    description += `\n\n*Versions*:\n|Installed|${cve.installedVersion}|\n|Fix in|${cve.fixedVersion}|`;
+    description += `\n\n*Primary URL*:\n${cve.primaryUrl}`;
     description += `\n\n*Description:*\n${cve.description}`;
+    description += `\n\n*References*:\n${cve.references.map(url => `- ${url}`).join('\n')}`;
 
     return {summary, description};
 }
@@ -144,7 +153,8 @@ async function syncCVEsToJira(cvesById) {
                 const priorityId = (jiraPriorityIds) ? jiraPriorityIds[severityToIndex(cve.severity)] : null;
 
                 const customFields = {
-                    [jiraCveIdFieldId]: cve.id
+                    [jiraCveIdFieldId]: cve.id,
+                    [jiraCveStatusFieldId]: cve.status,
                 };
                 const response = await jiraCreateIssue(jiraAuth, jiraProjectKey, jiraIssuetypeName, priorityId, summary, description, customFields);
                 const createIssueKey = response.key;
