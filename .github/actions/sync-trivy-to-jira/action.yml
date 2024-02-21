@@ -2,23 +2,23 @@ name: Synchronize Trivy to JIRA
 description: Synchronizes security vulnerabilities found by Trivy with JIRA issue tracker
 
 inputs:
-  trivy-results:
+  trivy_results:
     description: Path to Trivy results file in JSON format containing all found vulnerabilities
     required: true
-  min-severity:
+  min_severity:
     description: Minimum severity to be processed. Can be `UNKNOWN`, `LOW`, `MEDIUM`, `HIGH` or `CRITICAL`.
     required: false
     default: HIGH
-  jira-project-key:
+  jira_project_key:
     description: Key of JIRA project to sync issues to.
     required: true
-  jira-issuetype-name:
+  jira_issuetype_name:
     description: Name of JIRA issuetype to use for issues.
     required: true
-  jira-cve-id-field-id:
+  jira_cve_id_field_id:
     description: ID of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities.
     required: true
-  jira-cve-id-field-name:
+  jira_cve_id_field_name:
     description: |
       Name of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities. 
       JIRA needs to have this name in JQL queries.
