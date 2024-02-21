@@ -39,6 +39,7 @@ jobs:
           jira_issuetype_name: ${{ vars.JIRA_ISSUETYPE_NAME }}
           jira_cve_id_field_id: ${{ vars.JIRA_CVE_ID_FIELD_ID }}
           jira_cve_id_field_name: ${{ vars.JIRA_CVE_ID_FIELD_NAME }}
+          jira_cve_status_field_id: ${{ vars.JIRA_CVE_STATUS_FIELD_ID }}
           jira_priority_ids: ${{ vars.JIRA_PRIORITY_IDS }}
         env:
           JIRA_DOMAIN: ${{ vars.JIRA_DOMAIN }}

@@ -5,7 +5,7 @@ Setup issue tracker
 - Setup JIRA with
   - an empty project
   - a custom issue type to use for security vulnerabilities
-  - a custom text field to receive the CVE ID
+  - custom text fields to receive the CVE ID and if a fix is available
 - Generate an access token to access your JIRA by API
 
 How to develop locally
@@ -25,6 +25,7 @@ How to develop locally
   export INPUT_JIRA_ISSUETYPE_NAME="Security issue"
   export INPUT_JIRA_CVE_ID_FIELD_ID="customfield_10042"
   export INPUT_JIRA_CVE_ID_FIELD_NAME="CVE ID"
+  export INPUT_JIRA_CVE_STATUS_FIELD_ID="customfield_14711"
   export INPUT_JIRA_PRIORITY_IDS="1,2,3,4,5"
   ```
   JIRA IDs you have to pick from browser dev-tools 🙈
