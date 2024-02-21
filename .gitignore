@@ -1,0 +1,6 @@
+# IDE
+.idea/
+
+# Local development files
+.github/actions/sync-trivy-to-jira/.env
+.github/actions/sync-trivy-to-jira/trivy-results.json
