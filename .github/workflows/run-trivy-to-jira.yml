@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # Allows to run this workflow manually from the Actions tab
 
 jobs:
-  run-trivy:
+  run-trivy-to-jira:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout our actions for later
