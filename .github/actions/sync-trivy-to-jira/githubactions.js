@@ -1,5 +1,5 @@
 function _variableNameToEnvVariableName(variableName) {
-    return 'INPUT_' + variableName.replaceAll('-', '_').toUpperCase();
+    return 'INPUT_' + variableName.replace(/ /g, '_').toUpperCase();
 }
 
 function getRequiredEnvVariable(name) {

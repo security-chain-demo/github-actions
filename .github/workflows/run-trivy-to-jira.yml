@@ -33,13 +33,13 @@ jobs:
       - name: Synchronize Trivy result to JIRA
         uses: ./.github/actions/sync-trivy-to-jira
         with:
-          trivy-results: trivy-results.json
-          min-severity: ${{ vars.min-severity }}
-          jira-project-key: ${{ vars.jira-project-key }}
-          jira-issuetype-name: ${{ vars.jira-issuetype-name }}
-          jira-cve-id-field-id: ${{ vars.jira-cve-id-field-id }}
-          jira-cve-id-field-name: ${{ vars.jira-cve-id-field-name }}
+          trivy_results: trivy-results.json
+          min_severity: ${{ vars.MIN_SEVERITY }}
+          jira_project_key: ${{ vars.JIRA_PROJECT_KEY }}
+          jira_issuetype_name: ${{ vars.JIRA_ISSUETYPE_NAME }}
+          jira_cve_id_field_id: ${{ vars.JIRA_CVE_ID_FIELD_ID }}
+          jira_cve_id_field_name: ${{ vars.JIRA_CVE_ID_FIELD_NAME }}
         env:
-          JIRA_DOMAIN: ${{ vars.jira_domain }}
-          JIRA_EMAIL: ${{ vars.jira_email }}
-          JIRA_TOKEN: ${{ secrets.jira_token }}
+          JIRA_DOMAIN: ${{ vars.JIRA_DOMAIN }}
+          JIRA_EMAIL: ${{ vars.JIRA_EMAIL }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}

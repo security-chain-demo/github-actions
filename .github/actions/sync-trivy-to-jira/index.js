@@ -5,12 +5,12 @@ const {jiraSearchIssueByJQL, jiraCreateIssue, jiraEditIssue} = require('./jira')
 
 // Inputs and environment
 
-const trivyInputFile = ghaGetRequiredInput('trivy-results');
-const minSeverity = ghaGetInput('min-severity') || 'HIGH';
-const jiraProjectKey = ghaGetRequiredInput('jira-project-key');
-const jiraIssuetypeName = ghaGetRequiredInput('jira-issuetype-name');
-const jiraCveIdFieldId = ghaGetRequiredInput('jira-cve-id-field-id');
-const jiraCveIdFieldName = ghaGetRequiredInput('jira-cve-id-field-name');
+const trivyInputFile = ghaGetRequiredInput('trivy_results');
+const minSeverity = ghaGetInput('min_severity') || 'HIGH';
+const jiraProjectKey = ghaGetRequiredInput('jira_project_key');
+const jiraIssuetypeName = ghaGetRequiredInput('jira_issuetype_name');
+const jiraCveIdFieldId = ghaGetRequiredInput('jira_cve_id_field_id');
+const jiraCveIdFieldName = ghaGetRequiredInput('jira_cve_id_field_name');
 
 const jiraAuth = {
     domain: getRequiredEnvVariable('JIRA_DOMAIN'),
