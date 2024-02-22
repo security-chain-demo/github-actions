@@ -9,6 +9,9 @@ const trivyInputFile = ghaGetRequiredInput('trivy_results');
 const minSeverity = ghaGetInput('min_severity') || 'HIGH';
 const jiraProjectKey = ghaGetRequiredInput('jira_project_key');
 const jiraIssuetypeName = ghaGetRequiredInput('jira_issuetype_name');
+const jiraTeamFieldId = ghaGetRequiredInput('jira_team_field_id');
+const jiraTeamFieldName = ghaGetRequiredInput('jira_team_field_name');
+const jiraTeamFieldValue = ghaGetRequiredInput('jira_team_field_value');
 const jiraCveIdFieldId = ghaGetRequiredInput('jira_cve_id_field_id');
 const jiraCveIdFieldName = ghaGetRequiredInput('jira_cve_id_field_name');
 const jiraCveStatusFieldId = ghaGetRequiredInput('jira_cve_status_field_id');
@@ -126,7 +129,8 @@ async function syncCVEsToJira(cvesById) {
             const escapeJQL = (str) => str; // TODO did not check what special chars JIRA allows, for now, just pass-through
             const jql =
                 'project = "' + escapeJQL(jiraProjectKey) + '" ' +
-                'and "' + escapeJQL(jiraCveIdFieldName) + '" ~ "\\\"' + cveId + '\\\""'; // '\"' needs for an exact match with '~', see https://confluence.atlassian.com/jirasoftwareserver/advanced-searching-operators-reference-939938745.html
+                'and "' + escapeJQL(jiraTeamFieldName) + '" = "' + escapeJQL(jiraTeamFieldValue) + '"' +
+                'and "' + escapeJQL(jiraCveIdFieldName) + '" ~ "\\\"' + escapeJQL(cveId) + '\\\""'; // '\"' needs for an exact match with '~', see https://confluence.atlassian.com/jirasoftwareserver/advanced-searching-operators-reference-939938745.html
             const searchResult = await jiraSearchIssueByJQL(jiraAuth, jql);
 
             const {summary, description} = buildSummaryAndDescription(cve);
@@ -136,7 +140,7 @@ async function syncCVEsToJira(cvesById) {
                 const jiraIssueId = searchResult.issues[0].id;
                 const jiraIssueKey = searchResult.issues[0].key;
 
-                ghaNotice(`JIRA issue ${jiraIssueKey} already exists for CVE ${cveId}. Updating.`);
+                ghaNotice(`JIRA issue ${jiraIssueKey} already exists for team ${jiraTeamFieldValue} and CVE ${cveId}. Updating.`);
 
                 await jiraEditIssue(jiraAuth, jiraIssueId, summary, description);
 
@@ -145,7 +149,7 @@ async function syncCVEsToJira(cvesById) {
             else {
                 // Issue does not exist
 
-                ghaNotice(`No JIRA issue exists for CVE ${cveId}. Creating.`);
+                ghaNotice(`No JIRA issue exists for team ${jiraTeamFieldValue} and CVE ${cveId}. Creating.`);
 
                 // Set priority only when creating the issue.
                 // Users may triage the issue and change the priority in JIRA.
@@ -153,6 +157,7 @@ async function syncCVEsToJira(cvesById) {
                 const priorityId = (jiraPriorityIds) ? jiraPriorityIds[severityToIndex(cve.severity)] : null;
 
                 const customFields = {
+                    [jiraTeamFieldId]: jiraTeamFieldValue,
                     [jiraCveIdFieldId]: cve.id,
                     [jiraCveStatusFieldId]: cve.status,
                 };

@@ -37,6 +37,9 @@ jobs:
           min_severity: ${{ vars.MIN_SEVERITY }}
           jira_project_key: ${{ vars.JIRA_PROJECT_KEY }}
           jira_issuetype_name: ${{ vars.JIRA_ISSUETYPE_NAME }}
+          jira_team_field_id: ${{ vars.JIRA_TEAM_FIELD_ID }}
+          jira_team_field_name: ${{ vars.JIRA_TEAM_FIELD_NAME }}
+          jira_team_field_value: ${{ vars.JIRA_TEAM_FIELD_VALUE }} # cannot be fix, but will soon be replaced by deployment's workflow
           jira_cve_id_field_id: ${{ vars.JIRA_CVE_ID_FIELD_ID }}
           jira_cve_id_field_name: ${{ vars.JIRA_CVE_ID_FIELD_NAME }}
           jira_cve_status_field_id: ${{ vars.JIRA_CVE_STATUS_FIELD_ID }}
