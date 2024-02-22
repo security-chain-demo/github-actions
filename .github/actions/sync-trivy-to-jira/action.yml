@@ -15,6 +15,16 @@ inputs:
   jira_issuetype_name:
     description: Name of JIRA issuetype to use for issues.
     required: true
+  jira_team_field_id:
+    description: ID of JIRA custom field to receive the team. Each team has its own issues.
+    required: true
+  jira_team_field_name:
+    description: |
+      Name of JIRA custom field to receive the team. Each team has its own issues.
+      JIRA needs to have this name in JQL queries.
+  jira_team_field_value:
+    description: |
+      Value of JIRA team (JIRA needs the ID, not the name!) to assign the issues to. Each team has its own issues.
   jira_cve_id_field_id:
     description: ID of JIRA custom field to receive the CVE ID. This field is used to match vulnerabilities.
     required: true
