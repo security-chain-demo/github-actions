@@ -14,12 +14,14 @@ jobs:
       - name: Checkout our actions for later
         uses: actions/checkout@v4
 
+      - name: Download Trivy
+        run: wget -q https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.tar.gz
+
+      - name: Extract Trivy
+        run: tar -xf trivy_0.49.1_Linux-64bit.tar.gz
+
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "python:3.4-alpine" # demo image
-          format: json
-          output: trivy-results.json
+        run: ./trivy image python:3.4-alpine --format json --output trivy-results.json
 
       - name: Save Trivy results as artifact
         uses: actions/upload-artifact@v4
