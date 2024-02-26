@@ -21,16 +21,22 @@ function ghaGetInput(variableName) {
     return process.env[_variableNameToEnvVariableName(variableName)];
 }
 
+function _ghaOutputLog(level, text) {
+    text
+        .split('\n')
+        .forEach(line => process.stdout.write(`::${level}::${line}\n`));
+}
+
 function ghaWarning(text) {
-    process.stdout.write(`::warning::${text}\n`);
+    _ghaOutputLog('warning', text);
 }
 
 function ghaNotice(text) {
-    process.stdout.write(`::notice::${text}\n`);
+    _ghaOutputLog('notice', text);
 }
 
 function ghaDebug(text) {
-    process.stdout.write(`::debug::${text}\n`);
+    _ghaOutputLog('debug', text);
 }
 
 async function ghaGroup(groupName, asyncFunc) {
