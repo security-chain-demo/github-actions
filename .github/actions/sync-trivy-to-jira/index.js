@@ -1,17 +1,18 @@
 const fs = require('node:fs');
+const { exec } = require('node:child_process');
 const {severityToInt, severityToIndex} = require('./utils');
 const {ghaGetRequiredInput, getRequiredEnvVariable, ghaGetInput, ghaDebug, ghaWarning, ghaGroup, ghaNotice} = require('./githubactions');
 const {jiraSearchIssueByJQL, jiraCreateIssue, jiraEditIssue} = require('./jira');
 
 // Inputs and environment
 
-const trivyInputFile = ghaGetRequiredInput('trivy_results');
+const servicesFile = ghaGetRequiredInput('services');
 const minSeverity = ghaGetInput('min_severity') || 'HIGH';
 const jiraProjectKey = ghaGetRequiredInput('jira_project_key');
 const jiraIssuetypeName = ghaGetRequiredInput('jira_issuetype_name');
+const jiraServiceFieldId = ghaGetRequiredInput('jira_service_field_id');
+const jiraServiceFieldName = ghaGetRequiredInput('jira_service_field_name');
 const jiraTeamFieldId = ghaGetRequiredInput('jira_team_field_id');
-const jiraTeamFieldName = ghaGetRequiredInput('jira_team_field_name');
-const jiraTeamFieldValue = ghaGetRequiredInput('jira_team_field_value');
 const jiraCveIdFieldId = ghaGetRequiredInput('jira_cve_id_field_id');
 const jiraCveIdFieldName = ghaGetRequiredInput('jira_cve_id_field_name');
 const jiraCveStatusFieldId = ghaGetRequiredInput('jira_cve_status_field_id');
@@ -32,18 +33,71 @@ const jiraAuth = {
     token: getRequiredEnvVariable('JIRA_TOKEN')
 };
 
-// Read Trivy results
+// Read services file
 
-const text = fs.readFileSync(trivyInputFile, 'UTF-8');
-const json = JSON.parse(text);
+const text = fs.readFileSync(servicesFile, 'UTF-8');
+const services = JSON.parse(text);
+
+// Execute Trivy
+
+async function executeTrivy(image) {
+    // Check "image", so we don't execute arbitrary shell code O.o
+    if (!image.match(/^[a-z0-9-]+(:[0-9a-z.-]+)?$/)) {
+        throw new Error('Invalid image: ' + image);
+    }
+    const command = `trivy image ${image} --format json`;
+
+    return await ghaGroup(`Running Trivy on image "${image}"`, async () => {
+        return new Promise((resolve, reject) => {
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    ghaWarning(stderr);
+                    reject(error);
+                } else {
+                    ghaDebug(`Executed Trivy on image ${image}. Output:\n${stdout}`);
+
+                    resolve(JSON.parse(stdout));
+                }
+            });
+        });
+    });
+}
+
+// Progress (= execute Trivy and sync to JIRA) on each service
+
+async function processService(serviceName, service) {
+    const image = service.image;
+    const jiraTeamId = service.jiraTeamId;
+
+    if (!image) {
+        ghaWarning(`Service ${serviceName} does not have an image assigned. Aborting.`)
+        process.exit(1);
+    }
+    if (!jiraTeamId) {
+        ghaWarning(`Service ${serviceName} does not have a jiraTeamId assigned. Aborting.`)
+        process.exit(1);
+    }
+
+    const trivyResultsJson = await executeTrivy(image);
+    const cvesById = await processTrivyResult(image, trivyResultsJson);
+
+    await syncCVEsToJira(serviceName, service, cvesById);
+}
+
+async function processServices(services) {
+    for (const serviceName of Object.keys(services)) {
+        const service = services[serviceName];
+        await processService(serviceName, service)
+    }
+}
 
 // Process Trivy results
 //
 // We group the result by CVE ID. Multiple packages can be affected by the same CVE.
 // We report the CVE as a unit, listing the affected packages in the text.
 
-async function processTrivyResult() {
-    return await ghaGroup('Analysing Trivy results', async () => {
+async function processTrivyResult(image, json) {
+    return await ghaGroup(`Analysing Trivy results for image "${image}"`, async () => {
         const cvesById = {};
 
         for (const result of json.Results) {
@@ -120,8 +174,8 @@ function buildSummaryAndDescription(cve) {
     return {summary, description};
 }
 
-async function syncCVEsToJira(cvesById) {
-    await ghaGroup('Syncing results to JIRA', async () => {
+async function syncCVEsToJira(serviceName, service, cvesById) {
+    await ghaGroup(`Syncing results for service '${serviceName}' to JIRA`, async () => {
         for (const cveId of Object.keys(cvesById)) {
             const cve = cvesById[cveId];
             ghaDebug('cve: ' + JSON.stringify(cve));
@@ -129,8 +183,8 @@ async function syncCVEsToJira(cvesById) {
             const escapeJQL = (str) => str; // TODO did not check what special chars JIRA allows, for now, just pass-through
             const jql =
                 'project = "' + escapeJQL(jiraProjectKey) + '" ' +
-                'and "' + escapeJQL(jiraTeamFieldName) + '" = "' + escapeJQL(jiraTeamFieldValue) + '"' +
-                'and "' + escapeJQL(jiraCveIdFieldName) + '" ~ "\\\"' + escapeJQL(cveId) + '\\\""'; // '\"' needs for an exact match with '~', see https://confluence.atlassian.com/jirasoftwareserver/advanced-searching-operators-reference-939938745.html
+                'and "' + escapeJQL(jiraServiceFieldName) + '" ~ \\\"' + escapeJQL(serviceName) + '\\\" ' + // '\"' needs for an exact match with '~', see https://confluence.atlassian.com/jirasoftwareserver/advanced-searching-operators-reference-939938745.html
+                'and "' + escapeJQL(jiraCveIdFieldName) + '" ~ "\\\"' + escapeJQL(cveId) + '\\\""';
             const searchResult = await jiraSearchIssueByJQL(jiraAuth, jql);
 
             const {summary, description} = buildSummaryAndDescription(cve);
@@ -140,7 +194,7 @@ async function syncCVEsToJira(cvesById) {
                 const jiraIssueId = searchResult.issues[0].id;
                 const jiraIssueKey = searchResult.issues[0].key;
 
-                ghaNotice(`JIRA issue ${jiraIssueKey} already exists for team ${jiraTeamFieldValue} and CVE ${cveId}. Updating.`);
+                ghaNotice(`JIRA issue ${jiraIssueKey} already exists for service ${serviceName} and CVE ${cveId}. Updating.`);
 
                 await jiraEditIssue(jiraAuth, jiraIssueId, summary, description);
 
@@ -149,7 +203,7 @@ async function syncCVEsToJira(cvesById) {
             else {
                 // Issue does not exist
 
-                ghaNotice(`No JIRA issue exists for team ${jiraTeamFieldValue} and CVE ${cveId}. Creating.`);
+                ghaNotice(`No JIRA issue exists for service ${serviceName} and CVE ${cveId}. Creating.`);
 
                 // Set priority only when creating the issue.
                 // Users may triage the issue and change the priority in JIRA.
@@ -157,14 +211,15 @@ async function syncCVEsToJira(cvesById) {
                 const priorityId = (jiraPriorityIds) ? jiraPriorityIds[severityToIndex(cve.severity)] : null;
 
                 const customFields = {
-                    [jiraTeamFieldId]: jiraTeamFieldValue,
+                    [jiraServiceFieldId]: serviceName,
+                    [jiraTeamFieldId]: service.jiraTeamId,
                     [jiraCveIdFieldId]: cve.id,
                     [jiraCveStatusFieldId]: cve.status,
                 };
                 const response = await jiraCreateIssue(jiraAuth, jiraProjectKey, jiraIssuetypeName, priorityId, summary, description, customFields);
                 const createIssueKey = response.key;
 
-                ghaNotice(`Created new JIRA issue ${createIssueKey} for CVE ${cveId}.`);
+                ghaNotice(`Created new JIRA issue ${createIssueKey} for service ${serviceName} and CVE ${cveId}.`);
             }
         }
     });
@@ -173,9 +228,12 @@ async function syncCVEsToJira(cvesById) {
 // main
 
 Promise.resolve()
-    .then(() => processTrivyResult())
-    .then(cvesById => syncCVEsToJira(cvesById))
+    .then(() => processServices(services))
     .then(() => {
         ghaNotice('All done.');
         process.exit(0);
+    })
+    .catch((err) => {
+        ghaWarning('Caught an error: ' + err);
+        process.exit(1);
     });
