@@ -36,6 +36,11 @@ function ghaNotice(text) {
 }
 
 function ghaDebug(text) {
+    // Don't output debug level when developing locally
+    if (process.env['DISABLE_HGA_DEBUG'] === "true") {
+        return;
+    }
+
     _ghaOutputLog('debug', text);
 }
 

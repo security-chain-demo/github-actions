@@ -30,6 +30,8 @@ How to develop locally
   INPUT_JIRA_CVE_ID_FIELD_NAME="CVE ID"
   INPUT_JIRA_CVE_STATUS_FIELD_ID="customfield_14711"
   INPUT_JIRA_PRIORITY_IDS="1,2,3,4,5"
+  
+  DISABLE_HGA_DEBUG=true
   ```
   JIRA IDs you have to pick from browser dev-tools 🙈
 - Create a `services.json` like
