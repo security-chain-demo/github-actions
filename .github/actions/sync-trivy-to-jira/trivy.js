@@ -1,6 +1,6 @@
-const {mkdirSync} = require('node:fs')
+const {mkdirSync, statSync} = require('node:fs')
 const {exec} = require('node:child_process');
-const {ghaDebug, ghaWarning, ghaGroup} = require('./githubactions');
+const {ghaDebug, ghaWarning, ghaGroup, ghaNotice} = require('./githubactions');
 
 /**
  * Executes Trivy on an image to generate an SBOM.
@@ -26,6 +26,28 @@ async function trivyImageToSBOM(image) {
 
     const imageNameSafe = image.replace(':', '!'); // ':' can make problems in some FS, better avoid it.
     const sbomFile = `${sbomDirectory}/${imageNameSafe}.cyclonedx.json`;
+
+    // Use cached file if present.
+    // Vulnerabilities could change over time. A specific image will not change (*).
+    //
+    // *) Note: During development it's possible to use the same image (i.e. name+version) and change its
+    //    dependencies/base image. We assume this will not be done. Application code will change multiple time
+    //    during the lifetime of a Pull Request. But not the dependencies/base image. If such a change is performed,
+    //    we assume the image's version will be changed, too.
+
+    let cacheFileExists = true;
+    try {
+        statSync(sbomFile);
+    } catch (e) {
+        cacheFileExists = false;
+    }
+
+    if (cacheFileExists) {
+        ghaNotice(`SBOM for image ${image} already exists in cached file ${sbomFile}. We skip running Trivy for this.`);
+        return Promise.resolve(sbomFile);
+    }
+
+    // Run Trivy to generate the SBOM
 
     const command = `trivy image ${image} --format cyclonedx --output ${sbomFile}`;
 
