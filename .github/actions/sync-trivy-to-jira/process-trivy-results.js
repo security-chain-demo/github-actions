@@ -1,4 +1,4 @@
-const {executeTrivy} = require('./trivy');
+const {trivyImageToSBOM, trivyScanSBOM} = require('./trivy');
 const {syncCVEsToJira} = require('./sync-to-jira');
 const {ghaDebug, ghaWarning, ghaGroup, ghaNotice} = require('./githubactions');
 
@@ -38,8 +38,9 @@ async function processService(serviceName, service, trivyConfig, jiraConfig) {
         process.exit(1);
     }
 
-    const trivyResultsJson = await executeTrivy(image);
-    const cvesById = await processTrivyResult(image, trivyResultsJson, trivyConfig.minSeverity);
+    const sbomFile = await trivyImageToSBOM(image);
+    const trivyScanResultsJson = await trivyScanSBOM(sbomFile);
+    const cvesById = await processTrivyResult(image, trivyScanResultsJson, trivyConfig.minSeverity);
 
     await syncCVEsToJira(serviceName, service, cvesById, jiraConfig);
 }
@@ -69,15 +70,15 @@ function severityToInt(severity) {
  * We report the CVE as a unit, listing the affected packages in the text.
  *
  * @param {String} image
- * @param {Object} json Trivy JSON data about this image
+ * @param {Object} trivyScanResultsJson Trivy vulnerability result for this image as JSON data
  * @param {String} minSeverity minimal severity to include a CVE into the result (`CRITICAL`,`HIGH`, ...)
  * @returns {Promise<Object>} Promise resolving to the CVEs by ID
  */
-async function processTrivyResult(image, json, minSeverity) {
+async function processTrivyResult(image, trivyScanResultsJson, minSeverity) {
     return await ghaGroup(`Analysing Trivy results for image "${image}"`, async () => {
         const cvesById = {};
 
-        for (const result of json.Results) {
+        for (const result of trivyScanResultsJson.Results) {
             for (const vulnerability of (result.Vulnerabilities || [])) { // Vulnerabilities can be null
                 ghaDebug('Vulnerability: ' + JSON.stringify(vulnerability));
 
